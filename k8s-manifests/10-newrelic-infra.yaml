@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: newrelic
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nri-bundle-config
+  namespace: newrelic
+data:
+  CLUSTER_NAME: "motortech-eks"
+  NRIA_VERBOSE: "0"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: newrelic-infrastructure
+  namespace: newrelic
+  labels:
+    app: newrelic-infrastructure
+spec:
+  selector:
+    matchLabels:
+      app: newrelic-infrastructure
+  template:
+    metadata:
+      labels:
+        app: newrelic-infrastructure
+    spec:
+      serviceAccountName: default
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: newrelic-infrastructure
+          image: newrelic/infrastructure-k8s:latest
+          env:
+            - name: NRIA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: newrelic-secret
+                  key: license-key
+            - name: CLUSTER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: nri-bundle-config
+                  key: CLUSTER_NAME
+            - name: NRIA_DISPLAY_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /host
+              name: host-volume
+              readOnly: true
+            - mountPath: /var/run/docker.sock
+              name: docker-socket
+      volumes:
+        - name: host-volume
+          hostPath:
+            path: /
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: newrelic-secret
+  namespace: newrelic
+type: Opaque
+data:
+  license-key: CHANGE_ME_BASE64
