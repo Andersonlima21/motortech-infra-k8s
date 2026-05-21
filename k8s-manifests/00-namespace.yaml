@@ -1,6 +1,24 @@
+---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: motortech
-  labels:
-    app: motortech
+  name: motortech-shared
+  labels: { app: motortech, scope: shared }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: motortech-os
+  labels: { app: motortech, service: os }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: motortech-billing
+  labels: { app: motortech, service: billing }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: motortech-execution
+  labels: { app: motortech, service: execution }
